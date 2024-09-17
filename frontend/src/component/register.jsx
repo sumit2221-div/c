@@ -34,7 +34,7 @@ function Register() {
     formData.append('avatar', formdata.avatar);
 
     try {
-      const response = await axios.post('http://localhost:4000/api/auth/register', formData);
+      const response = await axios.post('https://real-time-chatting-fcs4.onrender.com/api/auth/register', formData);
       console.log('Registration Successful:', response.data);
     } catch (error) {
       console.error('Registration Failed:', error);

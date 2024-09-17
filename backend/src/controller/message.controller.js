@@ -18,10 +18,7 @@ export const getChatHistory = async (req, res) => {
             ]
         }).sort({ timestamp: 1 }); // Ensure sorting by the correct field
 
-        // Check if messages are found
-        if (messages.length === 0) {
-            return res.status(404).json({ message: 'No chat history found' });
-        }
+       
 
         // Return messages
         res.json({ messages });

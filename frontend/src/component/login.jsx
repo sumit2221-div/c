@@ -26,7 +26,7 @@ function Login() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await axios.post('http://localhost:4000/api/auth/login', formData);
+      const response = await axios.post('https://real-time-chatting-fcs4.onrender.com/api/auth/login', formData);
       if (response.status === 200) {
         const { accessToken, user} = response.data; // Extract userId from response
         sessionStorage.setItem('accessToken', accessToken);

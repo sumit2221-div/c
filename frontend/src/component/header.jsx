@@ -14,7 +14,7 @@ function Header() {
   const handleClick = async () => {
     try {
       const response = await axios.post(
-        'http://localhost:4000/api/auth/logout',
+        'https://real-time-chatting-fcs4.onrender.com/api/auth/logout',
         {},
         {
           headers: {

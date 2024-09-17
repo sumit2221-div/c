@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import axios from 'axios';
 import { io } from 'socket.io-client';
 
-const socket = io('http://localhost:4000', {
+const socket = io('https://real-time-chatting-fcs4.onrender.com', {
   auth: {
     token: sessionStorage.getItem('accessToken'),
   },
@@ -18,6 +18,7 @@ function Chat() {
   const [chatHistory, setChatHistory] = useState([]);
   const [typing, setTyping] = useState(false);
   const [userStatuses, setUserStatuses] = useState({});
+  const [error, setError] = useState(''); // Error state
   const accessToken = sessionStorage.getItem('accessToken');
 
   const chatHistoryRef = useRef(null);
@@ -25,13 +26,14 @@ function Chat() {
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const response = await axios.get('http://localhost:4000/api/auth/users', {
+        const response = await axios.get('https://real-time-chatting-fcs4.onrender.com/api/auth/users', {
           headers: { Authorization: `Bearer ${accessToken}` },
         });
         if (response.status === 200) {
           setUsers(response.data);
         }
       } catch (error) {
+        setError('Error fetching users');
         console.error('Error fetching users:', error);
       }
     };
@@ -93,26 +95,28 @@ function Chat() {
 
   const fetchChatHistory = async (userId) => {
     try {
-      const response = await axios.get(`http://localhost:4000/api/auth/c/${userId}`, {
+      const response = await axios.get(`https://real-time-chatting-fcs4.onrender.com/api/auth/c/${userId}`, {
         headers: { Authorization: `Bearer ${accessToken}` },
       });
       if (response.status === 200) {
         setChatHistory(response.data.messages);
       }
     } catch (error) {
+      setError('Error fetching chat history');
       console.error('Error fetching chat history:', error);
     }
   };
 
   const fetchUserDetails = async (userId) => {
     try {
-      const response = await axios.get(`http://localhost:4000/api/auth/u/${userId}`, {
+      const response = await axios.get(`https://real-time-chatting-fcs4.onrender.com/api/auth/u/${userId}`, {
         headers: { Authorization: `Bearer ${accessToken}` },
       });
       if (response.status === 200) {
         setSelectedUserDetails(response.data.user);
       }
     } catch (error) {
+      setError('Error fetching user details');
       console.error('Error fetching user details:', error);
     }
   };
@@ -131,6 +135,8 @@ function Chat() {
       if (chatHistoryRef.current) {
         chatHistoryRef.current.scrollTop = chatHistoryRef.current.scrollHeight;
       }
+    } else {
+      setError('Message content cannot be empty');
     }
   };
 
@@ -161,7 +167,10 @@ function Chat() {
           filteredUsers.map(user => (
             <div
               key={user._id}
-              onClick={() => setSelectedUser(user)}
+              onClick={() => {
+                setError(''); // Clear error when selecting a user
+                setSelectedUser(user);
+              }}
               className={`flex items-center p-3 mb-4 space-x-4 rounded-lg cursor-pointer transition duration-200 ease-in-out hover:bg-gray-600 ${
                 selectedUser && selectedUser._id === user._id ? 'bg-gray-600' : 'bg-gray-700'
               }`}
@@ -186,6 +195,11 @@ function Chat() {
         )}
       </div>
       <div className="w-3/4 p-4 bg-gray-900 rounded-r-lg ">
+        {error && (
+          <div className="p-4 mb-4 text-red-500 bg-red-100 rounded-lg">
+            {error}
+          </div>
+        )}
         {selectedUser ? (
           <div className="flex flex-col h-[650px]">
             {selectedUserDetails && (
@@ -212,7 +226,7 @@ function Chat() {
                     key={idx}
                     className={`flex ${msg.sender === sessionStorage.getItem('userId') ? 'justify-end' : 'justify-start'} mb-2`}
                   >
-                    <div className={`p-3 rounded-lg text-sm max-w-xs break-words ${msg.sender === sessionStorage.getItem('userId') ? 'bg-blue-500 text-white' : 'bg-gray-700 text-gray-100'}`}>
+                    <div className={`p-3 rounded-lg text-sm max-w-xs break-words ${msg.sender === sessionStorage.getItem('userId') ? 'bg-blue-500 text-white' : 'bg-gray-600 text-gray-100'}`}>
                       {msg.content}
                     </div>
                   </div>
@@ -221,21 +235,23 @@ function Chat() {
                 <p className="text-center text-gray-400">No chat history found.</p>
               )}
             </div>
-            {typing && <p className="text-sm text-gray-400">Typing...</p>}
+            {typing && (
+              <div className="text-center text-gray-400">
+                {selectedUser.username} is typing...
+              </div>
+            )}
             <div className="flex">
               <input
                 type="text"
+                placeholder="Type a message..."
                 value={message}
-                onChange={(e) => {
-                  setMessage(e.target.value);
-                  handleTyping();
-                }}
-                className="w-full p-3 text-gray-100 bg-gray-800 border border-gray-600 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="Type a message"
+                onChange={(e) => setMessage(e.target.value)}
+                onKeyPress={handleTyping}
+                className="flex-grow p-3 mb-2 mr-2 text-gray-100 bg-gray-800 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
               <button
                 onClick={sendMessage}
-                className="p-3 text-white bg-blue-500 rounded-r-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="px-4 py-2 mb-2 text-white bg-blue-500 rounded-lg hover:bg-blue-600"
               >
                 Send
               </button>

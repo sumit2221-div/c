@@ -11,7 +11,7 @@ function Login() {
     email: '',
     password: '',
   });
-
+  const [loading, setLoading] = useState(false); // Add loading state
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
@@ -25,19 +25,23 @@ function Login() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setLoading(true); // Set loading to true when the request starts
+
     try {
       const response = await axios.post('https://real-time-chatting-fcs4.onrender.com/api/auth/login', formData);
       if (response.status === 200) {
-        const { accessToken, user} = response.data; // Extract userId from response
+        const { accessToken, user } = response.data; // Extract userId from response
         sessionStorage.setItem('accessToken', accessToken);
         sessionStorage.setItem('userId', user._id); // Store userId in sessionStorage
         dispatch(authLogin({ email: formData.email, password: formData.password }));
         console.log(response.data);
-        console.log(user._id)
+        console.log(user._id);
         navigate('/');
       }
     } catch (error) {
       console.error('Error logging in:', error);
+    } finally {
+      setLoading(false); // Reset loading state after the request is complete
     }
   };
 
@@ -68,13 +72,20 @@ function Login() {
         required
       />
       <div className="flex justify-center">
-        <button className="px-10 py-4 text-center text-white rounded-xl bg-slate-500" type="submit">
-          Submit
+        <button
+          className={`px-10 py-4 text-center text-white rounded-xl ${loading ? 'bg-gray-400' : 'bg-slate-500'}`}
+          type="submit"
+          disabled={loading} // Disable the button while loading
+        >
+          {loading ? 'Logging in...' : 'Submit'}
         </button>
       </div>
       <p className="mt-2 text-base text-center text-white">
-              New user? <Link to="/Registration" className="font-medium hover:underline">Sign up here</Link>
-            </p>
+        New user?{' '}
+        <Link to="/Registration" className="font-medium hover:underline">
+          Sign up here
+        </Link>
+      </p>
     </form>
   );
 }

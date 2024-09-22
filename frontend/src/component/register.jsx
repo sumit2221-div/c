@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import axios from 'axios';
+import { useNavigate } from 'react-router-dom'; // Import useNavigate
 import InputTab from './input.jsx'; 
 
 function Register() {
@@ -10,6 +11,7 @@ function Register() {
     avatar: null
   });
   const [loading, setLoading] = useState(false);
+  const navigate = useNavigate(); // Initialize useNavigate
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -39,6 +41,7 @@ function Register() {
     try {
       const response = await axios.post('https://real-time-chatting-fcs4.onrender.com/api/auth/register', formData);
       console.log('Registration Successful:', response.data);
+      navigate('/login'); // Navigate to login after successful registration
     } catch (error) {
       console.error('Registration Failed:', error);
     } finally {

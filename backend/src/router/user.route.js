@@ -19,7 +19,7 @@ router.post('/register', upload.single('avatar'), registerUser);
 router.post('/login', loginUser);
 router.post('/logout', VerifyJWT, logoutUser);
 router.put('/change-password', VerifyJWT, changePassword);
-router.get('/current', VerifyJWT, getCurrentUserDetails);
+router.get('/current-user', VerifyJWT, getCurrentUserDetails);
 router.get('/users', VerifyJWT, getUsers);
 router.get('/u/:userId', VerifyJWT, getUserDetails);
 

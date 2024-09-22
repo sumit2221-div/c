@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import axios from 'axios';
 import { io } from 'socket.io-client';
+import UserList from './userlist.jsx';
 
 const socket = io('https://real-time-chatting-fcs4.onrender.com', {
   auth: {
@@ -18,7 +19,7 @@ function Chat() {
   const [chatHistory, setChatHistory] = useState([]);
   const [typing, setTyping] = useState(false);
   const [userStatuses, setUserStatuses] = useState({});
-  const [error, setError] = useState(''); // Error state
+  const [error, setError] = useState('');
   const accessToken = sessionStorage.getItem('accessToken');
 
   const chatHistoryRef = useRef(null);
@@ -39,7 +40,7 @@ function Chat() {
     };
 
     fetchUsers();
-  }, []);
+  }, [accessToken]);
 
   useEffect(() => {
     socket.on('connect', () => {
@@ -149,52 +150,20 @@ function Chat() {
     }
   };
 
-  const filteredUsers = users.filter(user =>
-    user.username.toLowerCase().includes(query.toLowerCase())
-  );
-
   return (
     <div className="flex max-w-full max-h-full p-6 mx-auto mt-10 text-gray-100 bg-gray-800 rounded-lg shadow-lg">
-      <div className="w-1/4 p-4 overflow-y-auto bg-gray-700 rounded-l-lg">
-        <input
-          type="text"
-          placeholder="Search users"
-          value={query}
-          onChange={e => setQuery(e.target.value)}
-          className="w-full p-3 mb-4 text-gray-100 bg-gray-800 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+      <div className="w-1/5 h-screen bg-gray-700">
+        {/* Sidebar */}
+        <UserList
+          users={users}
+          query={query}
+          setQuery={setQuery}
+          selectedUser={selectedUser}
+          setSelectedUser={setSelectedUser}
+          userStatuses={userStatuses}
         />
-        {filteredUsers.length > 0 ? (
-          filteredUsers.map(user => (
-            <div
-              key={user._id}
-              onClick={() => {
-                setError(''); // Clear error when selecting a user
-                setSelectedUser(user);
-              }}
-              className={`flex items-center p-3 mb-4 space-x-4 rounded-lg cursor-pointer transition duration-200 ease-in-out hover:bg-gray-600 ${
-                selectedUser && selectedUser._id === user._id ? 'bg-gray-600' : 'bg-gray-700'
-              }`}
-            >
-              <img
-                src={user.avatar}
-                alt={`${user.username}'s avatar`}
-                className="object-cover rounded-full w-14 h-14"
-              />
-              <div className="flex flex-col">
-                <span className="font-medium">{user.username}</span>
-                <span className="text-sm">
-                  {userStatuses[user._id] ? (
-                    userStatuses[user._id].status === 'online' ? 'Online' : `Last seen: ${new Date(userStatuses[user._id].lastSeen).toLocaleTimeString()}`
-                  ) : 'Offline'}
-                </span>
-              </div>
-            </div>
-          ))
-        ) : (
-          <p className="text-center text-gray-400">No users found.</p>
-        )}
       </div>
-      <div className="w-3/4 p-4 bg-gray-900 rounded-r-lg ">
+      <div className="w-4/5 p-4 bg-gray-900 rounded-r-lg">
         {error && (
           <div className="p-4 mb-4 text-red-500 bg-red-100 rounded-lg">
             {error}
@@ -213,7 +182,11 @@ function Chat() {
                   <span className="font-medium">{selectedUserDetails.username}</span>
                   <span className="text-sm">
                     {userStatuses[selectedUser._id] ? (
-                      userStatuses[selectedUser._id].status === 'online' ? 'Online' : `Last seen: ${new Date(userStatuses[selectedUser._id].lastSeen).toLocaleTimeString()}`
+                      userStatuses[selectedUser._id].status === 'online'
+                        ? 'Online'
+                        : `Last seen: ${new Date(
+                            userStatuses[selectedUser._id].lastSeen
+                          ).toLocaleTimeString()}`
                     ) : 'Offline'}
                   </span>
                 </div>
@@ -232,30 +205,26 @@ function Chat() {
                   </div>
                 ))
               ) : (
-                <p className="text-center text-gray-400">No chat history found.</p>
+                <p className="text-center text-gray-400">No messages yet.</p>
               )}
             </div>
-            {typing && (
-              <div className="text-center text-gray-400">
-                {selectedUser.username} is typing...
-              </div>
-            )}
-            <div className="flex">
+            <div className="flex items-center">
               <input
                 type="text"
-                placeholder="Type a message..."
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
-                onKeyPress={handleTyping}
-                className="flex-grow p-3 mb-2 mr-2 text-gray-100 bg-gray-800 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                onKeyDown={handleTyping}
+                className="flex-grow p-3 text-gray-100 bg-gray-800 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Type your message..."
               />
               <button
                 onClick={sendMessage}
-                className="px-4 py-2 mb-2 text-white bg-blue-500 rounded-lg hover:bg-blue-600"
+                className="p-3 ml-4 text-white bg-blue-500 rounded-lg"
               >
                 Send
               </button>
             </div>
+            {typing && <p className="mt-2 text-sm text-gray-400">User is typing...</p>}
           </div>
         ) : (
           <p className="text-center text-gray-400">Select a user to start chatting.</p>

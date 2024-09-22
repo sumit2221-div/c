@@ -23,6 +23,6 @@ router.get('/current-user', VerifyJWT, getCurrentUserDetails);
 router.get('/users', VerifyJWT, getUsers);
 router.get('/u/:userId', VerifyJWT, getUserDetails);
 
-router.get('/c/:senderId', VerifyJWT, getChatHistory);
+router.get('/c/:senderId', VerifyJWT, getChatHistory)
 
 export default router;

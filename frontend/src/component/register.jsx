@@ -9,6 +9,7 @@ function Register() {
     password: '',
     avatar: null
   });
+  const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -33,11 +34,15 @@ function Register() {
     formData.append('password', formdata.password);
     formData.append('avatar', formdata.avatar);
 
+    setLoading(true); // Set loading to true
+
     try {
       const response = await axios.post('https://real-time-chatting-fcs4.onrender.com/api/auth/register', formData);
       console.log('Registration Successful:', response.data);
     } catch (error) {
       console.error('Registration Failed:', error);
+    } finally {
+      setLoading(false); // Reset loading state
     }
   };
 
@@ -83,7 +88,13 @@ function Register() {
         />
       </div>
       <div className="flex justify-center">
-        <button className='px-10 py-4 text-center text-white rounded-xl bg-slate-500' type='submit'>Submit</button>
+        <button 
+          className={`px-10 py-4 text-center text-white rounded-xl ${loading ? 'bg-gray-400' : 'bg-slate-500'}`} 
+          type='submit'
+          disabled={loading} // Disable button when loading
+        >
+          {loading ? 'Submitting...' : 'Submit'}
+        </button>
       </div>
     </form>
   );

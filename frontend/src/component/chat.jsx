@@ -153,10 +153,11 @@ function Chat() {
                 <Box>
                   <Typography variant="h6">{selectedUserDetails.username}</Typography>
                   <Typography variant="body2">
-                    {userStatuses[selectedUser._id]?.status === 'online'
-                      ? 'Online'
-                      : `Last seen: ${new Date(userStatuses[selectedUser._id]?.lastSeen).toLocaleTimeString()}`}
-                  </Typography>
+  {userStatuses[selectedUser._id]?.status === 'online'
+    ? 'Online'
+    : 'Offline'}
+</Typography>
+
                 </Box>
               </Box>
             )}

@@ -1,109 +1,210 @@
-import express from 'express';
-import http from 'http';
-import { Server } from 'socket.io';
-import dotenv from 'dotenv';
-import cors from 'cors';
-import cookieParser from 'cookie-parser';
-import helmet from 'helmet';
-import { ConnectDB } from './src/db/database.js';
-import authRoutes from './src/router/user.route.js';
-import jwt from 'jsonwebtoken';
-import { Message } from './src/models/message.model.js';
+import React, { useEffect, useState, useRef } from 'react';
+import axios from 'axios';
+import { io } from 'socket.io-client';
+import {
+  Box,
+  TextField,
+  Button,
+  List,
+  ListItem,
+  ListItemText,
+  Avatar,
+  Typography,
+} from '@mui/material';
+import UserList from "./userlist.jsx";
 
-dotenv.config({ path: './.env' });
-
-const PORT = process.env.PORT || 4000;
-const app = express();
-
-// Middleware
-app.use(express.json());
-app.use(cookieParser());
-app.use(cors({ origin: process.env.ORIGIN, credentials: true }));
-app.use(helmet());
-
-// Global error handling middleware (optional)
-app.use((err, req, res, next) => {
-  console.error('Global error handler:', err.stack);
-  res.status(500).send('Something went wrong!');
+const socket = io('https://real-time-chatting-fcs4.onrender.com', {
+  auth: {
+    token: sessionStorage.getItem('accessToken'),
+  },
 });
 
-// Connect to database
-ConnectDB()
-  .then(() => {
-    console.log('Database connected');
+function Chat() {
+  const [users, setUsers] = useState([]);
+  const [query, setQuery] = useState('');
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [selectedUserDetails, setSelectedUserDetails] = useState(null);
+  const [message, setMessage] = useState('');
+  const [chatHistory, setChatHistory] = useState([]);
+  const [userStatuses, setUserStatuses] = useState({});
+  const [error, setError] = useState('');
+  const accessToken = sessionStorage.getItem('accessToken');
+  const chatHistoryRef = useRef(null);
 
-    const server = http.createServer(app);
-
-    // Socket.IO setup
-    const io = new Server(server, {
-      cors: {
-        origin: process.env.ORIGIN,
-        credentials: true,
-      },
-    });
-
-    io.use((socket, next) => {
-      const token = socket.handshake.auth.token;
-      if (token) {
-        try {
-          const user = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
-          socket.user = user;
-          console.log(`User authenticated: ${user._id}`);
-          next();
-        } catch (err) {
-          console.error('Authentication error:', err);
-          next(new Error('Authentication error'));
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const response = await axios.get('https://real-time-chatting-fcs4.onrender.com/api/auth/users', {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        });
+        if (response.status === 200) {
+          setUsers(response.data);
         }
-      } else {
-        console.error('No token provided');
-        next(new Error('No token provided'));
+      } catch (error) {
+        setError('Error fetching users. Please try again later.');
       }
+    };
+
+    fetchUsers();
+  }, [accessToken]);
+
+  useEffect(() => {
+    socket.on('connect', () => {
+      console.log('Connected to Socket.IO server');
     });
 
-    io.on('connection', (socket) => {
-      console.log(`A user connected: ${socket.user._id}`);
+    socket.on('user status', ({ userId, status }) => {
+      setUserStatuses((prev) => ({ ...prev, [userId]: { status } }));
+    });
 
-      // Emit user status as online
-      io.emit('user status', { userId: socket.user._id, status: 'online' });
+    socket.on('chat message', (msg) => {
+      setChatHistory((prevChatHistory) => [...prevChatHistory, msg]);
+      setMessage('');
+      scrollToBottom();
+    });
 
-      // Handle chat messages and store them in the database
-      socket.on('chat message', async (data) => {
-        const { sender, receiver, content } = data;
-        console.log(`Message from ${sender} to ${receiver}: ${content}`);
+    return () => {
+      socket.off('connect');
+      socket.off('user status');
+      socket.off('chat message');
+    };
+  }, []);
 
+  const scrollToBottom = () => {
+    if (chatHistoryRef.current) {
+      chatHistoryRef.current.scrollTop = chatHistoryRef.current.scrollHeight;
+    }
+  };
+
+  const sendMessage = () => {
+    if (selectedUser && message) {
+      const msg = {
+        sender: sessionStorage.getItem('userId'),
+        receiver: selectedUser._id,
+        content: message,
+      };
+      socket.emit('chat message', msg);
+      setChatHistory((prevChatHistory) => [...prevChatHistory, msg]);
+      setMessage('');
+      scrollToBottom();
+    } else {
+      setError('Message content cannot be empty');
+    }
+  };
+
+  useEffect(() => {
+    if (selectedUser) {
+      const fetchUserDetails = async () => {
         try {
-          // Save the message to the database
-          const newMessage = new Message({ sender,  receiver, content });
-          await newMessage.save();
-
-          // Broadcast the message to the specific receiver
-          io.to(receiver).emit('chat message', { sender, content });
+          const response = await axios.get(`https://real-time-chatting-fcs4.onrender.com/api/auth/u/${selectedUser._id}`, {
+            headers: { Authorization: `Bearer ${accessToken}` },
+          });
+          if (response.status === 200) {
+            setSelectedUserDetails(response.data.user);
+          }
         } catch (error) {
-          console.error('Error saving message:', error);
+          setError('Error fetching user details.');
         }
-      });
+      };
+      fetchUserDetails();
+    }
+  }, [selectedUser, accessToken]);
 
-      // User typing event
-      socket.on('typing', ({ userId, isTyping }) => {
-        console.log(`User ${userId} is typing: ${isTyping}`);
-        io.emit('typing', { userId, isTyping });
-      });
+  useEffect(() => {
+    if (selectedUser) {
+      const fetchChatHistory = async () => {
+        try {
+          const response = await axios.get(`https://real-time-chatting-fcs4.onrender.com/api/auth/c/${selectedUser._id}`, {
+            headers: { Authorization: `Bearer ${accessToken}` },
+          });
+          if (response.status === 200) {
+            setChatHistory(response.data.messages || []);
+          }
+        } catch (error) {
+          setError('Error fetching chat history. Please try again later.');
+        }
+      };
+      fetchChatHistory();
+    }
+  }, [selectedUser, accessToken]);
 
-      // Handle disconnection
-      socket.on('disconnect', () => {
-        console.log(`User disconnected: ${socket.user._id}`);
-        io.emit('user status', { userId: socket.user._id, status: 'offline' });
-      });
-    });
+  return (
+    <Box className="flex flex-col max-w-full max-h-full p-6 mx-auto mt-10 bg-gray-800 rounded-lg shadow-lg md:flex-row">
+      <Box className="w-full h-screen md:w-1/5">
+        <UserList
+          users={users}
+          query={query}
+          setQuery={setQuery}
+          selectedUser={selectedUser}
+          setSelectedUser={setSelectedUser}
+          userStatuses={userStatuses}
+        />
+      </Box>
+      <Box className="w-full p-4 bg-gray-900 rounded-r-lg md:w-4/5">
+        {error && (
+          <Typography color="error" variant="body1" align="center">
+            {error}
+          </Typography>
+        )}
+        {selectedUser ? (
+          <Box className="flex flex-col h-[650px] md:h-auto">
+            {selectedUserDetails && (
+              <Box className="flex items-center p-3 mb-4 space-x-4 bg-gray-700 rounded-lg">
+                <Avatar src={selectedUserDetails.avatar} alt={`${selectedUserDetails.username}'s avatar`} />
+                <Box>
+                  <Typography variant="h6">{selectedUserDetails.username}</Typography>
+                  <Typography variant="body2">
+                    {userStatuses[selectedUser._id]?.status === 'online' ? 'Online' : 'Offline'}
+                  </Typography>
+                </Box>
+              </Box>
+            )}
+            <Box ref={chatHistoryRef} className="flex-1 p-1 mb-2 overflow-y-auto bg-gray-800 rounded-lg h-[400px]">
+              {chatHistory.length > 0 ? (
+                <List>
+                  {chatHistory.map((msg, idx) => {
+                    const isCurrentUser = msg.sender === sessionStorage.getItem('userId');
+                    return (
+                      <ListItem key={idx} className={`flex ${isCurrentUser ? 'justify-end' : 'justify-start'}`}>
+                        <Box className={`p-3 rounded-lg max-w-xs break-words ${isCurrentUser ? 'bg-blue-500 text-white ml-auto' : 'bg-gray-600 text-gray-100'}`}>
+                          <ListItemText primary={msg.content} />
+                        </Box>
+                      </ListItem>
+                    );
+                  })}
+                </List>
+              ) : (
+                <Typography className="text-center text-gray-400">No messages yet.</Typography>
+              )}
+            </Box>
+            <Box className="flex items-center">
+              <TextField
+                variant="outlined"
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                className="flex-grow"
+                placeholder="Type your message..."
+                size="small"
+                InputProps={{
+                  style: {
+                    backgroundColor: '#2c2c2c',
+                    color: '#fff',
+                  },
+                }}
+              />
+              <Button variant="contained" color="primary" onClick={sendMessage} className="ml-2">
+                Send
+              </Button>
+            </Box>
+          </Box>
+        ) : (
+          <Box className="flex items-center justify-center h-full">
+            <Typography className="text-gray-400">Select a user to start chatting</Typography>
+          </Box>
+        )}
+      </Box>
+    </Box>
+  );
+}
 
-    // Routes
-    app.use('/api/auth', authRoutes);
-
-    // Start the server
-    server.listen(PORT, () => {
-      console.log(`Server is running on port ${PORT}`);
-    });
-  })
-  .catch((err) => {
-    console.error('Error connecting to database:', err);
-  });
+export default Chat;

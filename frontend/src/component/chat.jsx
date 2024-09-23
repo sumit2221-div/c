@@ -26,7 +26,6 @@ function Chat() {
   const [selectedUserDetails, setSelectedUserDetails] = useState(null);
   const [message, setMessage] = useState('');
   const [chatHistory, setChatHistory] = useState([]);
-  const [typing, setTyping] = useState(false);
   const [userStatuses, setUserStatuses] = useState({});
   const [error, setError] = useState('');
   const accessToken = sessionStorage.getItem('accessToken');
@@ -54,6 +53,10 @@ function Chat() {
       console.log('Connected to Socket.IO server');
     });
 
+    socket.on('user status', ({ userId, status }) => {
+      setUserStatuses((prev) => ({ ...prev, [userId]: { status } }));
+    });
+
     socket.on('chat message', (msg) => {
       setChatHistory((prevChatHistory) => [...prevChatHistory, msg]);
       setMessage('');
@@ -62,6 +65,7 @@ function Chat() {
 
     return () => {
       socket.off('connect');
+      socket.off('user status');
       socket.off('chat message');
     };
   }, []);
@@ -105,24 +109,21 @@ function Chat() {
       fetchUserDetails();
     }
   }, [selectedUser, accessToken]);
+
   useEffect(() => {
     if (selectedUser) {
-      // Fetch the chat history when a user is selected
       const fetchChatHistory = async () => {
         try {
           const response = await axios.get(`https://real-time-chatting-fcs4.onrender.com/api/auth/c/${selectedUser._id}`, {
             headers: { Authorization: `Bearer ${accessToken}` },
           });
           if (response.status === 200) {
-            // Update the chat history with fetched data
-            setChatHistory(response.data.messages|| []); // Assuming 'history' is the correct field
-            console.log(response.messages)
+            setChatHistory(response.data.messages || []);
           }
         } catch (error) {
           setError('Error fetching chat history. Please try again later.');
         }
       };
-  
       fetchChatHistory();
     }
   }, [selectedUser, accessToken]);
@@ -153,40 +154,29 @@ function Chat() {
                 <Box>
                   <Typography variant="h6">{selectedUserDetails.username}</Typography>
                   <Typography variant="body2">
-  {userStatuses[selectedUser._id]?.status === 'online'
-    ? 'Online'
-    : 'Offline'}
-</Typography>
-
+                    {userStatuses[selectedUser._id]?.status === 'online' ? 'Online' : 'Offline'}
+                  </Typography>
                 </Box>
               </Box>
             )}
-          <Box ref={chatHistoryRef} className="flex-1 p-1 mb-2 overflow-y-auto bg-gray-800 rounded-lg h-[400px]">
-  {chatHistory.length > 0 ? (
-    <List>
-      {chatHistory.map((msg, idx) => {
-        const isCurrentUser = msg.sender === sessionStorage.getItem('userId');
-        return (
-          <ListItem
-            key={idx}
-            className={`flex ${isCurrentUser ? 'justify-end' : 'justify-start'}`}
-          >
-            <Box
-              className={`p-3 rounded-lg max-w-xs break-words ${
-                isCurrentUser ? 'bg-blue-500 text-white ml-auto' : 'bg-gray-600 text-gray-100'
-              }`}
-            >
-              <ListItemText primary={msg.content} />
+            <Box ref={chatHistoryRef} className="flex-1 p-1 mb-2 overflow-y-auto bg-gray-800 rounded-lg h-[400px]">
+              {chatHistory.length > 0 ? (
+                <List>
+                  {chatHistory.map((msg, idx) => {
+                    const isCurrentUser = msg.sender === sessionStorage.getItem('userId');
+                    return (
+                      <ListItem key={idx} className={`flex ${isCurrentUser ? 'justify-end' : 'justify-start'}`}>
+                        <Box className={`p-3 rounded-lg max-w-xs break-words ${isCurrentUser ? 'bg-blue-500 text-white ml-auto' : 'bg-gray-600 text-gray-100'}`}>
+                          <ListItemText primary={msg.content} />
+                        </Box>
+                      </ListItem>
+                    );
+                  })}
+                </List>
+              ) : (
+                <Typography className="text-center text-gray-400">No messages yet.</Typography>
+              )}
             </Box>
-          </ListItem>
-        );
-      })}
-    </List>
-  ) : (
-    <Typography className="text-center text-gray-400">No messages yet.</Typography>
-  )}
-</Box>
-
             <Box className="flex items-center">
               <TextField
                 variant="outlined"

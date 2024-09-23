@@ -13,6 +13,7 @@ function Header() {
 
   const [currentUser, setCurrentUser] = useState(null);
   const [error, setError] = useState('');
+  const [showDetails, setShowDetails] = useState(false); // Toggle state for details section
 
   const handleClick = async () => {
     try {
@@ -38,27 +39,30 @@ function Header() {
   };
 
   const fetchCurrentUser = async () => {
-    try {
-      const response = await axios.get(
-        'https://real-time-chatting-fcs4.onrender.com/api/auth/current-user',
-        {
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-          },
-        }
-      );
+    if (!showDetails) {  // Fetch user details only if details section is not already open
+      try {
+        const response = await axios.get(
+          'https://real-time-chatting-fcs4.onrender.com/api/auth/current-user',
+          {
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+            },
+          }
+        );
 
-      if (response.status === 200) {
-        setCurrentUser(response.data.user);
+        if (response.status === 200) {
+          setCurrentUser(response.data.user);
+        }
+      } catch (error) {
+        setError('Error fetching user details');
+        console.error('Error fetching current user:', error);
       }
-    } catch (error) {
-      setError('Error fetching user details');
-      console.error('Error fetching current user:', error);
     }
+    setShowDetails(!showDetails); // Toggle the display of user details
   };
 
   return (
-    <div className='h-[50px] w-full absolute top-0  flex justify-between items-center' style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}>
+    <div className='h-[50px] w-full absolute top-0 flex justify-between items-center' style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}>
       <h1 className='text-3xl text-center text-white'>Chat App</h1>
 
       {isLoggedIn ? (
@@ -67,10 +71,11 @@ function Header() {
             Logout
           </button>
           <button className='h-[50px] w-[100px] bg-blue-500 text-white rounded-xl ml-2' onClick={fetchCurrentUser}>
-            My Details
+            {showDetails ? 'Close Details' : 'My Details'}
           </button>
-          {currentUser && (
-            <div className='absolute top-[60px] left-0 w-full bg-gray-800 text-white p-4 rounded-lg'>
+
+          {showDetails && currentUser && (
+            <div className='absolute top-[60px] left-[80%] w-full max-w-xs bg-gray-800 text-white p-4 rounded-lg shadow-md'>
               <h2 className='text-lg font-semibold'>Current User:</h2>
               <div className='flex items-center'>
                 {currentUser.avatar && (
@@ -87,7 +92,8 @@ function Header() {
               </div>
             </div>
           )}
-          {error && (
+
+          {showDetails && error && (
             <div className='absolute top-[60px] left-0 w-full bg-red-500 text-white p-4 rounded-lg'>
               {error}
             </div>

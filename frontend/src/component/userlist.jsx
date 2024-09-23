@@ -1,4 +1,5 @@
 import React from 'react';
+import { Box, TextField, List, ListItem, ListItemAvatar, ListItemText, Avatar, Typography } from '@mui/material';
 
 function UserList({ users, query, setQuery, selectedUser, setSelectedUser, userStatuses }) {
   const filteredUsers = users.filter((user) =>
@@ -6,48 +7,58 @@ function UserList({ users, query, setQuery, selectedUser, setSelectedUser, userS
   );
 
   return (
-    <div className="h-full p-4 bg-gray-800 rounded-lg shadow-lg">
-      <input
-        type="text"
+    <Box className="h-full p-4 bg-gray-800 rounded-lg shadow-lg">
+      <TextField
+        variant="outlined"
         placeholder="Search users"
         value={query}
         onChange={(e) => setQuery(e.target.value)}
-        className="w-full p-3 mb-4 text-gray-100 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+        className="w-full mb-4"
+        InputProps={{
+          style: {
+            backgroundColor: '#2c2c2c',
+            color: '#fff',
+          },
+        }}
       />
-      <div className="overflow-y-auto h-[calc(100vh-160px)]">
+      <Box className="overflow-y-auto h-[calc(100vh-200px)] md:h-[calc(100vh-240px)]">
         {filteredUsers.length > 0 ? (
-          filteredUsers.map((user) => (
-            <div
-              key={user._id}
-              onClick={() => setSelectedUser(user)}
-              className={`flex items-center p-3 mb-2 space-x-4 rounded-lg cursor-pointer transition duration-300 ease-in-out hover:bg-gray-600 ${
-                selectedUser && selectedUser._id === user._id ? 'bg-gray-700 border-l-4 border-blue-500' : 'bg-gray-800'
-              }`}
-            >
-              <img
-                src={user.avatar}
-                alt={`${user.username}'s avatar`}
-                className="object-cover w-12 h-12 border-2 border-gray-500 rounded-full"
-              />
-              <div className="flex flex-col">
-                <span className="font-semibold text-gray-100">{user.username}</span>
-                <span className="text-sm text-gray-400">
-                  {userStatuses[user._id]
-                    ? userStatuses[user._id].status === 'online'
-                      ? 'Online'
-                      : `Last seen: ${new Date(
-                          userStatuses[user._id].lastSeen
-                        ).toLocaleTimeString()}`
-                    : 'Offline'}
-                </span>
-              </div>
-            </div>
-          ))
+          <List>
+            {filteredUsers.map((user) => (
+              <ListItem
+                key={user._id}
+                onClick={() => setSelectedUser(user)}
+                className={`cursor-pointer transition duration-300 ease-in-out hover:bg-gray-600 ${
+                  selectedUser && selectedUser._id === user._id ? 'bg-gray-700' : 'bg-gray-800'
+                }`}
+              >
+                <ListItemAvatar>
+                  <Avatar src={user.avatar} alt={`${user.username}'s avatar`} />
+                </ListItemAvatar>
+                <ListItemText
+                  primary={
+                    <Typography variant="body1" className="font-semibold text-gray-100 truncate">
+                      {user.username}
+                    </Typography>
+                  }
+                  secondary={
+                    <Typography variant="body2" className="text-gray-400">
+                      {userStatuses[user._id]
+                        ? userStatuses[user._id].status === 'online'
+                          ? 'Online'
+                          : `Last seen: ${new Date(userStatuses[user._id].lastSeen).toLocaleTimeString()}`
+                        : 'Offline'}
+                    </Typography>
+                  }
+                />
+              </ListItem>
+            ))}
+          </List>
         ) : (
-          <p className="text-center text-gray-500">No users found.</p>
+          <Typography className="text-center text-gray-500">No users found.</Typography>
         )}
-      </div>
-    </div>
+      </Box>
+    </Box>
   );
 }
 

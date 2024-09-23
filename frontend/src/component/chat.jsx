@@ -180,24 +180,29 @@ function Chat() {
                 </Box>
               </Box>
             )}
-            <Box ref={chatHistoryRef} className="flex-1 p-1 mb-2 overflow-y-auto bg-gray-800 rounded-lg h-[400px]">
-              {chatHistory.length > 0 ? (
-                <List>
-                  {chatHistory.map((msg, idx) => {
-                    const isCurrentUser = msg.sender === sessionStorage.getItem('userId');
-                    return (
-                      <ListItem key={idx} className={`flex ${isCurrentUser ? 'justify-end' : 'justify-start'}`}>
-                        <Box className={`p-3 rounded-lg max-w-xs break-words ${isCurrentUser ? 'bg-blue-500 text-white ml-auto' : 'bg-gray-600 text-gray-100'}`}>
-                          <ListItemText primary={msg.content} />
-                        </Box>
-                      </ListItem>
-                    );
-                  })}
-                </List>
-              ) : (
-                <Typography className="text-center text-gray-400">No messages yet.</Typography>
-              )}
+          <Box
+  ref={chatHistoryRef}
+  className="flex-1 p-1 mb-2 overflow-y-scroll bg-gray-800 rounded-lg"
+
+>
+  {chatHistory.length > 0 ? (
+    <List className='h-[450px]'>
+      {chatHistory.map((msg, idx) => {
+        const isCurrentUser = msg.sender === sessionStorage.getItem('userId');
+        return (
+          <ListItem key={idx} className={`flex ${isCurrentUser ? 'justify-end' : 'justify-start'}`}>
+            <Box className={`p-3 rounded-lg max-w-xs break-words ${isCurrentUser ? 'bg-blue-500 text-white ml-auto' : 'bg-gray-600 text-gray-100'}`}>
+              <ListItemText primary={msg.content} />
             </Box>
+          </ListItem>
+        );
+      })}
+    </List>
+  ) : (
+    <Typography className="text-center text-gray-400">No messages yet.</Typography>
+  )}
+</Box>
+
             <Box className="flex items-center">
               <TextField
                 variant="outlined"

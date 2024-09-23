@@ -105,6 +105,27 @@ function Chat() {
       fetchUserDetails();
     }
   }, [selectedUser, accessToken]);
+  useEffect(() => {
+    if (selectedUser) {
+      // Fetch the chat history when a user is selected
+      const fetchChatHistory = async () => {
+        try {
+          const response = await axios.get(`https://real-time-chatting-fcs4.onrender.com/api/auth/c/${selectedUser._id}`, {
+            headers: { Authorization: `Bearer ${accessToken}` },
+          });
+          if (response.status === 200) {
+            // Update the chat history with fetched data
+            setChatHistory(response.data.messages|| []); // Assuming 'history' is the correct field
+            console.log(response.messages)
+          }
+        } catch (error) {
+          setError('Error fetching chat history. Please try again later.');
+        }
+      };
+  
+      fetchChatHistory();
+    }
+  }, [selectedUser, accessToken]);
 
   return (
     <Box className="flex flex-col max-w-full max-h-full p-6 mx-auto mt-10 bg-gray-800 rounded-lg shadow-lg md:flex-row">
@@ -139,22 +160,32 @@ function Chat() {
                 </Box>
               </Box>
             )}
-            <Box ref={chatHistoryRef} className="flex-1 p-1 mb-2 overflow-y-auto bg-gray-800 rounded-lg h-[400px]">
-              {chatHistory.length > 0 ? (
-                <List>
-                  {chatHistory.map((msg, idx) => (
-                    <ListItem key={idx} className={msg.sender === sessionStorage.getItem('userId') ? 'justify-end' : 'justify-start'}>
-                      <ListItemText
-                        primary={msg.content}
-                        className={`p-3 rounded-lg text-sm max-w-xs break-words ${msg.sender === sessionStorage.getItem('userId') ? 'bg-blue-500 text-white' : 'bg-gray-600 text-gray-100'}`}
-                      />
-                    </ListItem>
-                  ))}
-                </List>
-              ) : (
-                <Typography className="text-center text-gray-400">No messages yet.</Typography>
-              )}
+          <Box ref={chatHistoryRef} className="flex-1 p-1 mb-2 overflow-y-auto bg-gray-800 rounded-lg h-[400px]">
+  {chatHistory.length > 0 ? (
+    <List>
+      {chatHistory.map((msg, idx) => {
+        const isCurrentUser = msg.sender === sessionStorage.getItem('userId');
+        return (
+          <ListItem
+            key={idx}
+            className={`flex ${isCurrentUser ? 'justify-end' : 'justify-start'}`}
+          >
+            <Box
+              className={`p-3 rounded-lg max-w-xs break-words ${
+                isCurrentUser ? 'bg-blue-500 text-white ml-auto' : 'bg-gray-600 text-gray-100'
+              }`}
+            >
+              <ListItemText primary={msg.content} />
             </Box>
+          </ListItem>
+        );
+      })}
+    </List>
+  ) : (
+    <Typography className="text-center text-gray-400">No messages yet.</Typography>
+  )}
+</Box>
+
             <Box className="flex items-center">
               <TextField
                 variant="outlined"

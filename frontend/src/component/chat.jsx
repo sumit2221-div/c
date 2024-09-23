@@ -49,6 +49,15 @@ function Chat() {
   }, [accessToken]);
 
   useEffect(() => {
+    const requestNotificationPermission = async () => {
+      if (Notification.permission !== 'denied') {
+        const permission = await Notification.requestPermission();
+        console.log('Notification permission status:', permission);
+      }
+    };
+
+    requestNotificationPermission();
+
     socket.on('connect', () => {
       console.log('Connected to Socket.IO server');
     });
@@ -61,6 +70,7 @@ function Chat() {
       setChatHistory((prevChatHistory) => [...prevChatHistory, msg]);
       setMessage('');
       scrollToBottom();
+      notifyNewMessage(msg);  // Notify on new message
     });
 
     return () => {
@@ -73,6 +83,17 @@ function Chat() {
   const scrollToBottom = () => {
     if (chatHistoryRef.current) {
       chatHistoryRef.current.scrollTop = chatHistoryRef.current.scrollHeight;
+    }
+  };
+
+  const notifyNewMessage = (msg) => {
+    if (Notification.permission === 'granted') {
+      const notification = new Notification('New Message', {
+        body: `${msg.sender}: ${msg.content}`,
+      });
+      console.log('Notification sent:', notification);
+    } else {
+      console.log('Notification permission not granted');
     }
   };
 
